@@ -4,8 +4,12 @@ package traffic.board.article.api;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.web.client.RestClient;
+import traffic.board.article.service.response.ArticlePageResponse;
 import traffic.board.article.service.response.ArticleResponse;
+
+import java.util.List;
 
 public class ArticleApiTest {
 
@@ -62,6 +66,45 @@ public class ArticleApiTest {
         restClient.delete()
                 .uri("v1/articles/{articleId}", articleId)
                 .retrieve();
+    }
+
+    @Test
+    void readAllTest() {
+        ArticlePageResponse response = restClient.get()
+                .uri("/v1/articles?boardId=1&pageSize=30&page=50000")
+                .retrieve()
+                .body(ArticlePageResponse.class);
+
+        System.out.println("response.getArticleCount() = " + response.getArticleCount());
+        for (ArticleResponse article : response.getArticles()) {
+            System.out.println("article.getId() = " + article.getId());
+        }
+    }
+
+    @Test
+    void readAllInfiniteTest() {
+        List<ArticleResponse> articles = restClient.get()
+                .uri("/v1/articles/infinite-scroll?boardId=1&pageSize=5")
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<ArticleResponse>>() {
+                });
+
+        System.out.println("firstPage");
+        for (ArticleResponse article : articles) {
+            System.out.println("article.getId() = " + article.getId());
+        }
+
+        List<ArticleResponse> articles2 = restClient.get()
+                .uri("/v1/articles/infinite-scroll?boardId=1&pageSize=5&lastArticleId=" + articles.getLast().getId())
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<ArticleResponse>>() {
+                });
+
+        System.out.println("secondPage");
+        for (ArticleResponse response : articles2) {
+            System.out.println("response.getId() = " + response.getId());
+        }
+
     }
 
     @Getter
